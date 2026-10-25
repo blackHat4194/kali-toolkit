@@ -1,55 +1,12 @@
-
 #!/usr/bin/env bash
-
-BASE_DIR="$HOME/kali-toolkit"
-
-RESET='\033[0m'
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-
+set -u
+BASE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$BASE_DIR/config.sh"
+ensure_project_dirs
 while true; do
-    clear
-
-    printf '%b' "$CYAN"
-    echo "╔══════════════════════════════════════╗"
-    echo "║             KALI TOOLKIT             ║"
-    echo "╚══════════════════════════════════════╝"
-    printf '%b' "$RESET"
-
-    echo "1. File & Directory Explorer"
-    echo "2. File Organizer"
-    echo "3. Backup Tool"
-    echo "4. System Information"
-    echo "5. Network Diagnostics"
-    echo "6. GitHub Learning Workspace"
-    echo "7. Exit"
-    echo
-
-    read -r -p "Select an option: " choice
-
-    case "$choice" in
-        1) script="explorer.sh" ;;
-        2) script="file_organizer.sh" ;;
-        3) script="backup.sh" ;;
-        4) script="system_info.sh" ;;
-        5) script="network_diagnostic.sh" ;;
-        6) script="workspace.sh" ;;
-        7)
-            echo "Exiting Kali Toolkit..."
-            break
-            ;;
-        *)
-            printf '%bInvalid option.%b\n' "$RED" "$RESET"
-            sleep 1
-            continue
-            ;;
-    esac
-
-    if [[ -f "$BASE_DIR/$script" ]]; then
-        bash "$BASE_DIR/$script"
-    else
-        printf '%bModule not created yet: %s%b\n' "$RED" "$script" "$RESET"
-        read -r -p "Press Enter to return..."
-    fi
+ clear 2>/dev/null || true; heading 'PORTABLE LINUX TOOLKIT'; printf 'Project: %s\n\n' "$TOOLKIT_DIR"
+ printf '1. File & Directory Explorer\n2. File Organizer\n3. Backup & Restore\n4. System Information\n5. Network Diagnostics\n6. Git Repository Workspace\n7. Exit\n\n'
+ read -r -p 'Select an option: ' choice || break
+ case "$choice" in 1) script=explorer.sh;; 2) script=file_organizer.sh;; 3) script=backup.sh;; 4) script=system_info.sh;; 5) script=network_diagnostic.sh;; 6) script=workspace.sh;; 7) success 'Exiting toolkit.'; break;; *) error 'Invalid option.'; sleep 1; continue;; esac
+ if [[ -f "$BASE_DIR/$script" ]]; then bash "$BASE_DIR/$script"; else error "Module not found: $script"; pause_screen; fi
 done

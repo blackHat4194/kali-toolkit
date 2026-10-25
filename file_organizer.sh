@@ -1,60 +1,10 @@
-
 #!/usr/bin/env bash
-echo "runn"
-echo "========== FILE ORGANIZER =========="
-read -r -p "Enter folder path: " target
-
-if [[ ! -d "$target" ]]; then
-    echo "Error: Folder does not exist."
-    read -r -p "Press Enter to return..."
-    exit 1
-fi
-
-target="$(realpath "$target")"
-
-echo
-echo "Files to organize: $target"
-echo "Preview:"
-find "$target" -maxdepth 1 -type f -printf '%f\n'
-echo
-
-read -r -p "Move files into extension folders? (y/N): " confirm
-
-if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-    echo "Cancelled. No files moved."
-    read -r -p "Press Enter to return..."
-    exit 0
-fi
-
-shopt -s nullglob dotglob
-
-for file in "$target"/*; do
-    [[ -f "$file" ]] || continue
-
-    filename="${file##*/}"
-
-    if [[ "$filename" != *.* || "$filename" == .* && "$filename" != *.*.* ]]; then
-        category="No_Extension"
-    else
-        category="${filename##*.}"
-        category="${category,,}"
-    fi
-
-    [[ "$category" == "$filename" ]] && category="No_Extension"
-
-    destination="$target/$category"
-    mkdir -p "$destination"
-
-    if [[ ! -e "$destination/$filename" ]]; then
-        mv -- "$file" "$destination/"
-        echo "Moved: $filename -> $category/"
-    else
-        echo "Skipped: $filename (destination already exists)"
-    fi
-done
-
-shopt -u nullglob dotglob
-
-echo
-echo "Organization completed."
-read -r -p "Press Enter to return..."
+BASE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"; source "$BASE_DIR/config.sh"
+read -r -p 'Directory to organize (blank = current directory): ' target; target="${target:-$PWD}"
+[[ -d "$target" ]] || { error 'Directory not found.'; exit 1; }; target="$(cd -- "$target" && pwd -P)" || exit 1
+heading 'FILE ORGANIZER PREVIEW'; printf 'Target: %s\n' "$target"; find "$target" -maxdepth 1 -type f -printf '%f\n' 2>/dev/null | sort
+warning 'Files will be moved into folders named by extension. No recursion; conflicts are skipped.'
+read -r -p 'Type ORGANIZE to proceed: ' confirm; [[ "$confirm" == ORGANIZE ]] || { info 'Cancelled.'; exit 0; }
+moved=0
+while IFS= read -r -d '' f; do n="${f##*/}"; if [[ "$n" != *.* || "$n" == .* && "$n" != *.*.* ]]; then ext=no_extension; else ext="${n##*.}"; [[ -n "$ext" ]] || ext=no_extension; fi; d="$target/$ext"; mkdir -p -- "$d" || continue; [[ -e "$d/$n" || -L "$d/$n" ]] && { warning "Skipped existing: $d/$n"; continue; }; if mv -- "$f" "$d/$n"; then ((moved+=1)); fi; done < <(find "$target" -maxdepth 1 -type f -print0)
+success "Moved $moved file(s)."; pause_screen

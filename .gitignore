@@ -1,0 +1,25 @@
+# User data and generated backups
+backups/*
+!backups/.gitkeep
+
+# Cloned repositories are maintained separately
+tools/*
+!tools/.gitkeep
+
+# Local experiments
+test-area/*
+!test-area/.gitkeep
+
+# Editors and operating systems
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key

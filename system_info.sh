@@ -1,48 +1,7 @@
-
 #!/usr/bin/env bash
-
-RESET='\033[0m'
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-
-heading() {
-    printf '\n%b=== %s ===%b\n' "$CYAN" "$1" "$RESET"
-}
-
-show_command() {
-    local label="$1"
-    shift
-
-    printf '%b%s:%b\n' "$GREEN" "$label" "$RESET"
-    "$@" 2>&1
-    echo
-}
-
-clear
-heading "SYSTEM INFORMATION"
-
-printf '%bUsername:%b %s\n' "$YELLOW" "$RESET" "$(whoami)"
-printf '%bHostname:%b %s\n' "$YELLOW" "$RESET" "$(hostname)"
-printf '%bCurrent directory:%b %s\n' "$YELLOW" "$RESET" "$PWD"
-
-heading "OPERATING SYSTEM"
-if [[ -r /etc/os-release ]]; then
-    . /etc/os-release
-    printf 'OS: %s\n' "$PRETTY_NAME"
-fi
-
-show_command "Kernel" uname -r
-show_command "Uptime" uptime
-show_command "Memory" free -h
-show_command "Disk usage" df -h "$HOME"
-
-heading "NETWORK INTERFACES"
-if command -v ip >/dev/null 2>&1; then
-    ip -brief address
-else
-    echo "The 'ip' command is not installed."
-fi
-
-echo
-read -r -p "Press Enter to return to menu..."
+BASE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"; source "$BASE_DIR/config.sh"
+clear 2>/dev/null || true; heading 'SYSTEM INFORMATION'
+printf 'Username: %s\nHostname: %s\nToolkit path: %s\n' "$(id -un)" "$(hostname 2>/dev/null || echo unknown)" "$TOOLKIT_DIR"
+if [[ -r /etc/os-release ]]; then . /etc/os-release; printf 'OS: %s\n' "${PRETTY_NAME:-unknown}"; fi
+run_optional(){ local label="$1" cmd="$2"; shift 2; heading "$label"; if have_cmd "$cmd"; then "$cmd" "$@" 2>&1 || warning "$label command returned an error."; else warning "Command unavailable: $cmd"; fi; }
+run_optional Kernel uname -r; run_optional Uptime uptime; run_optional Memory free -h; run_optional 'Disk usage' df -h "$HOME"; run_optional 'Network interfaces' ip -brief address; pause_screen

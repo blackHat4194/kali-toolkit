@@ -1,106 +1,11 @@
-
 #!/usr/bin/env bash
-
-RESET='\033[0m'
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-
-tools_dir="$HOME/kali-toolkit/tools"
-
-mkdir -p "$tools_dir"
-
+BASE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"; source "$BASE_DIR/config.sh"; ensure_project_dirs
 while true; do
-    clear
-    printf '%b=== GITHUB LEARNING WORKSPACE ===%b\n' "$CYAN" "$RESET"
-    echo "Repository directory: $tools_dir"
-    echo
-    echo "1. List repositories"
-    echo "2. Read a repository README"
-    echo "3. Show repository path"
-    echo "4. Return to main menu"
-    echo
-
-    read -r -p "Choose an option: " choice
-
-    case "$choice" in
-        1)
-            echo
-            found=0
-
-            for repo in "$tools_dir"/*/; do
-                [[ -d "$repo" ]] || continue
-                printf '%b%s%b\n' "$GREEN" "${repo%/}" "$RESET"
-                found=1
-            done
-
-            if [[ "$found" -eq 0 ]]; then
-                echo "No repositories found."
-                echo "Clone a repository into the tools directory first."
-            fi
-
-            read -r -p "Press Enter to continue..."
-            ;;
-
-        2)
-            read -r -p "Repository folder name: " repo_name
-
-            if [[ -z "$repo_name" || "$repo_name" == */* ||
-                  "$repo_name" == "." || "$repo_name" == ".." ]]; then
-                echo "Enter a repository folder name only."
-            elif [[ ! -d "$tools_dir/$repo_name" ]]; then
-                echo "Repository not found."
-            else
-                readme=""
-
-                for candidate in \
-                    "$tools_dir/$repo_name/README.md" \
-                    "$tools_dir/$repo_name/README" \
-                    "$tools_dir/$repo_name/readme.md"; do
-                    if [[ -f "$candidate" ]]; then
-                        readme="$candidate"
-                        break
-                    fi
-                done
-
-                if [[ -n "$readme" ]]; then
-                    if command -v glow >/dev/null 2>&1; then
-                        glow "$readme"
-                    else
-                        less "$readme"
-                    fi
-                else
-                    echo "No README file found."
-                fi
-            fi
-
-            read -r -p "Press Enter to continue..."
-            ;;
-
-        3)
-            read -r -p "Repository folder name: " repo_name
-
-            if [[ -d "$tools_dir/$repo_name" &&
-                  "$repo_name" != */* &&
-                  "$repo_name" != "." &&
-                  "$repo_name" != ".." ]]; then
-                printf '%bPath:%b %s\n' \
-                    "$GREEN" "$RESET" \
-                    "$(realpath "$tools_dir/$repo_name")"
-            else
-                echo "Repository not found or invalid name."
-            fi
-
-            read -r -p "Press Enter to continue..."
-            ;;
-
-        4)
-            break
-            ;;
-
-        *)
-            printf '%bInvalid option.%b\n' "$RED" "$RESET"
-            sleep 1
-            ;;
-    esac
+ clear 2>/dev/null || true; heading 'GIT REPOSITORY WORKSPACE'; printf 'Repository directory: %s\n\n1. List folders\n2. Clone repository into tools/\n3. Read README\n4. Print repository path\n5. Show tools/ path\n6. Return\n\n' "$TOOLS_DIR"; read -r -p 'Choose: ' c || break
+ case "$c" in
+ 1) found=0; for r in "$TOOLS_DIR"/*/; do [[ -d "$r" ]] || continue; printf '%s\n' "${r%/}"; found=1; done; ((found)) || info 'No folders yet.'; pause_screen;;
+ 2) if ! have_cmd git; then error 'Git is not installed.'; else read -r -p 'Repository URL: ' url; read -r -p 'Destination folder name: ' folder; if [[ -z "$url" || "$url" == -* || -z "$folder" || "$folder" == */* || "$folder" == . || "$folder" == .. ]]; then error 'Invalid URL or folder name.'; elif [[ -e "$TOOLS_DIR/$folder" ]]; then error 'Destination already exists.'; else git clone -- "$url" "$TOOLS_DIR/$folder"; fi; fi; pause_screen;;
+ 3) read -r -p 'Repository folder name: ' folder; if [[ -z "$folder" || "$folder" == */* || "$folder" == . || "$folder" == .. || ! -d "$TOOLS_DIR/$folder" ]]; then error 'Invalid or missing folder.'; else f=''; for x in "$TOOLS_DIR/$folder/README.md" "$TOOLS_DIR/$folder/README" "$TOOLS_DIR/$folder/readme.md"; do [[ -f "$x" ]] && { f="$x"; break; }; done; if [[ -n "$f" ]]; then if have_cmd glow; then glow "$f"; elif have_cmd less; then less -- "$f"; else cat -- "$f"; fi; else warning 'README not found.'; fi; fi; pause_screen;;
+ 4) read -r -p 'Repository folder name: ' folder; if [[ -n "$folder" && "$folder" != */* && "$folder" != . && "$folder" != .. && -d "$TOOLS_DIR/$folder" ]]; then printf '%s\n' "$TOOLS_DIR/$folder"; else error 'Folder not found.'; fi; pause_screen;;
+ 5) printf '%s\n' "$TOOLS_DIR"; pause_screen;; 6) break;; *) error 'Invalid option.'; sleep 1;; esac
 done
